@@ -30,12 +30,14 @@
 </head>
 
 <script>
+var baseURL = 'https://csgithubsfdeploy.herokuapp.com';
+
 function githubdeploy()
 {
 	var sfdeployurl = 
 		$('#production').attr('checked') ? 
-			'https://githubsfdeploy.herokuapp.com/app/githubdeploy' :
-			'https://githubsfdeploy-sandbox.herokuapp.com/app/githubdeploy';
+			baseURL + '/app/githubdeploy' :
+			baseURL + '/app/githubdeploy';
 	sfdeployurl+= '/' + $('#owner').val() + '/' + $('#repo').val();
 	window.location = sfdeployurl;  
 }
@@ -51,7 +53,7 @@ function updatebuttonhtml()
 	var repoOwner = $('#owner').val();
 	var repoName = $('#repo').val();
 	var buttonhtml = 
-		'<a href="https://githubsfdeploy.herokuapp.com?owner=' + repoOwner +'&repo=' + repoName + '">\n' +
+		'<a href="' + baseURL + '/?owner=' + repoOwner +'&repo=' + repoName + '">\n' +
 			'  <img alt="Deploy to Salesforce"\n' + 
 			'       src="https://raw.githubusercontent.com/afawcett/githubsfdeploy/master/src/main/webapp/resources/img/deploy.png">\n' +
 		'</a>';
@@ -70,7 +72,7 @@ function load()
 <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
         <div class="container">
-            <a href="/" class="brand">GitHub Salesforce Deploy Tool</a>
+            <a href="/" class="brand">C|S GitHub Salesforce Deploy Tool</a>
             <a target="_new" href="http://andyinthecloud.com" class="brand" id="heroku">by <strong>andyinthecloud</strong></a>
         </div>
     </div>
