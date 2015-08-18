@@ -81,6 +81,7 @@ public class GitHubSalesforceDeployController {
 	// Allocated via your GitHub Account Settings, set as environment vars, provides increased limits per hour for GitHub API calls
 	private static String GITHUB_CLIENT_ID = "GITHUB_CLIENT_ID";
 	private static String GITHUB_CLIENT_SECRET = "GITHUB_CLIENT_SECRET";
+	private static String GITHUB_TOKEN = "GITHUB_TOKEN";
 		
     @RequestMapping(method = RequestMethod.GET, value = "/{owner}/{repo}")
     public String confirm(@PathVariable("owner") String repoOwner, @PathVariable("repo") String repoName, Map<String, Object> map) throws Exception 
@@ -96,9 +97,12 @@ public class GitHubSalesforceDeployController {
 	    	map.put("userContext", forceConnector.getConnection().getUserInfo());
 	    		    	
 	    	// Display repo info
-	    	GitHubClientOAuthServer client = 
-	    		new GitHubClientOAuthServer(System.getenv(GITHUB_CLIENT_ID), System.getenv(GITHUB_CLIENT_SECRET) );
-	    	map.put("repo", null);
+	    	//GitHubClientOAuthServer client = new GitHubClientOAuthServer(System.getenv(GITHUB_CLIENT_ID), System.getenv(GITHUB_CLIENT_SECRET));
+			GitHubClient client = new GitHubClient();
+			//client.setCredentials(System.getenv(GITHUB_USERNAME),System.getenv(GITHUB_PASSWORD));
+			client.setOAuth2Token(System.getenv(GITHUB_TOKEN));
+
+			map.put("repo", null);
 	    	map.put("githubcontents", null);
 	    	RepositoryService service = new RepositoryService(client);
 	    	map.put("repo", service.getRepository(repoId));
@@ -142,8 +146,10 @@ public class GitHubSalesforceDeployController {
     public String deploy(@PathVariable("owner") String repoOwner, @PathVariable("repo") String repoName, @RequestBody String repoContentsJson) throws Exception 
     {
     	// Connect via oAuth client and secret to get greater request limits
-    	GitHubClientOAuthServer client = 
-	    		new GitHubClientOAuthServer(System.getenv(GITHUB_CLIENT_ID), System.getenv(GITHUB_CLIENT_SECRET) );
+    	//GitHubClientOAuthServer client = new GitHubClientOAuthServer(System.getenv(GITHUB_CLIENT_ID), System.getenv(GITHUB_CLIENT_SECRET) );
+		GitHubClient client = new GitHubClient();
+		//client.setCredentials(System.getenv(GITHUB_USERNAME),System.getenv(GITHUB_PASSWORD));
+		client.setOAuth2Token(System.getenv(GITHUB_TOKEN));
    
     	// Repository files to deploy
     	ObjectMapper mapper = new ObjectMapper();
