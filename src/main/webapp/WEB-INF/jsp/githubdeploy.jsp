@@ -11,6 +11,10 @@
             <td><b>Repository Name:</b></td>
             <td><c:out value="${repositoryName}"/></td>
         </tr>
+        <tr>
+            <td><b>Selected Branch:</b></td>
+            <td><c:out value="${path}"/></td>
+        </tr>
 	    <c:if test="${repo != null}">
 	        <tr>
 	            <td><b>Repository Description:</b></td>
@@ -18,7 +22,7 @@
 	        </tr>
 	        <tr>
 	            <td><b>Repository URL:</b></td>
-	            <td><a href="${repo.getHtmlUrl()}" target="_new">${repo.getHtmlUrl()}</td>
+	            <td><a href="${repo.getHtmlUrl()}/tree/${path}" target="_new">${repo.getHtmlUrl()}/tree/${path}</td>
 	        </tr>
 	    </c:if>
         <tr>
@@ -58,14 +62,14 @@
 			render: function(container) {
 					if(container.repositoryItem!=null)
 						$('#githubcontents').append(
-							'<div><a target="_new" href="${repo.getHtmlUrl()}/blob/master/' + 
+							'<div><a target="_new" href="${repo.getHtmlUrl()}/blob/${path}/' + 
 								container.repositoryItem.path + '">' + container.repositoryItem.path + '</a></div>');
 					for(fileIdx in container.repositoryItems)
 						if(container.repositoryItems[fileIdx].repositoryItem.type == 'dir')
 							GitHubDeploy.render(container.repositoryItems[fileIdx]);
 						else
 							$('#githubcontents').append(
-								'<div><a target="_new" href="${repo.getHtmlUrl()}/blob/master/' + 
+								'<div><a target="_new" href="${repo.getHtmlUrl()}/blob/${path}/' + 
 									container.repositoryItems[fileIdx].repositoryItem.path + '">' + 
 									container.repositoryItems[fileIdx].repositoryItem.path + '</a></div>');
 				},

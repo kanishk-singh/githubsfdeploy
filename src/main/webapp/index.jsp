@@ -38,7 +38,7 @@ function githubdeploy()
 		$('#production').attr('checked') ? 
 			baseURL + '/app/githubdeploy' :
 			baseURL + '/app/githubdeploy';
-	sfdeployurl+= '/' + $('#owner').val() + '/' + $('#repo').val();
+	sfdeployurl+= '/' + $('#owner').val() + '/' + $('#repo').val() + '/' + $('#branch').val();
 	window.location = sfdeployurl;  
 }
 function togglebuttoncode()
@@ -52,8 +52,9 @@ function updatebuttonhtml()
 {
 	var repoOwner = $('#owner').val();
 	var repoName = $('#repo').val();
+	var branchName = $('#branch').val();
 	var buttonhtml = 
-		'<a href="' + baseURL + '/?owner=' + repoOwner +'&repo=' + repoName + '">\n' +
+		'<a href="' + baseURL + '/?owner=' + repoOwner +'&repo=' + repoName + '&branch=' + branchName +'">\n' +
 			'  <img alt="Deploy to Salesforce"\n' + 
 			'       src="https://raw.githubusercontent.com/afawcett/githubsfdeploy/master/src/main/webapp/resources/img/deploy.png">\n' +
 		'</a>';
@@ -63,6 +64,8 @@ function load()
 {
 	$('#owner').val($.url().param('owner'));
 	$('#repo').val($.url().param('repo'));
+	if($.url().param('branch') != null) { $('#branch').val($.url().param('branch')); }
+	else { $('#branch').val('master'); }
 	$('#login').focus();
 	updatebuttonhtml();
 }
@@ -91,13 +94,19 @@ function load()
 				<td>
 					<label>Repository</label>
 				</td>
+				<td>
+					<label>Branch</label>
+				</td>
 			</tr>
 			<tr>
 				<td>
 					<input id="owner" oninput="updatebuttonhtml();"/>&nbsp;
 				</td>
 				<td>
-					<input id="repo" oninput="updatebuttonhtml();"/>
+					<input id="repo" oninput="updatebuttonhtml();"/>&nbsp;
+				</td>
+				<td>
+					<input id="branch" oninput="updatebuttonhtml();"/>
 				</td>
 			</tr>
 		</table>

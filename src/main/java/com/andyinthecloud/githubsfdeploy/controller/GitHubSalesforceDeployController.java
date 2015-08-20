@@ -83,8 +83,8 @@ public class GitHubSalesforceDeployController {
 	private static String GITHUB_CLIENT_SECRET = "GITHUB_CLIENT_SECRET";
 	private static String GITHUB_TOKEN = "GITHUB_TOKEN";
 		
-    @RequestMapping(method = RequestMethod.GET, value = "/{owner}/{repo}")
-    public String confirm(@PathVariable("owner") String repoOwner, @PathVariable("repo") String repoName, Map<String, Object> map) throws Exception 
+    @RequestMapping(method = RequestMethod.GET, value = "/{owner}/{repo}/{branch}")
+    public String confirm(@PathVariable("owner") String repoOwner, @PathVariable("repo") String repoName, @PathVariable("branch") String repoBranch, Map<String, Object> map) throws Exception 
     {
     	try
     	{	    	
@@ -102,10 +102,23 @@ public class GitHubSalesforceDeployController {
 			//client.setCredentials(System.getenv(GITHUB_USERNAME),System.getenv(GITHUB_PASSWORD));
 			client.setOAuth2Token(System.getenv(GITHUB_TOKEN));
 
+			//TODO: this is where we need to be getting the branch
 			map.put("repo", null);
+			map.put("path", "master");
 	    	map.put("githubcontents", null);
 	    	RepositoryService service = new RepositoryService(client);
 	    	map.put("repo", service.getRepository(repoId));
+			
+			//Get branches
+			//if(repoBranch != null && repoBranch != '') {
+			if(!Strings.isNullOrEmpty(repoBranch)) {
+				list<RepositoryBranch> branches = service.getBranches(repoId);
+				for(RepositoryBranch rb : branches) {
+					if(rb.getName() == repoBranch) (
+						map.put("path",rb);
+					)
+				}
+			}
 	    	
 	    	// Prepare Salesforce metadata metadata for repository scan
 	    	RepositoryScanResult repositoryScanResult = new RepositoryScanResult();
@@ -122,7 +135,7 @@ public class GitHubSalesforceDeployController {
 	    	
 	    	// Retrieve repository contents applicable for deploy
 	    	ContentsServiceEx contentService = new ContentsServiceEx(client);
-	    	scanRepository(contentService, repoId, contentService.getContents(repoId), repositoryContainer, repositoryScanResult);	    		    	
+	    	scanRepository(contentService, repoId, contentService.getContents(repoId,(repoBranch == '' ? null : repoBranch)), repositoryContainer, repositoryScanResult);	    		    	
 	    	ObjectMapper mapper = new ObjectMapper();	    	
 	    	if(repositoryScanResult.pacakgeRepoDirectory!=null)
 	    		map.put("githubcontents", mapper.writeValueAsString(repositoryScanResult.pacakgeRepoDirectory));
@@ -142,8 +155,8 @@ public class GitHubSalesforceDeployController {
     }
     
     @ResponseBody
-    @RequestMapping(method = RequestMethod.POST, value = "/{owner}/{repo}")
-    public String deploy(@PathVariable("owner") String repoOwner, @PathVariable("repo") String repoName, @RequestBody String repoContentsJson) throws Exception 
+    @RequestMapping(method = RequestMethod.POST, value = "/{owner}/{repo}/{branch}")
+    public String deploy(@PathVariable("owner") String repoOwner, @PathVariable("repo") String repoName, @PathVariable("branch") String repoBranch, @RequestBody String repoContentsJson) throws Exception 
     {
     	// Connect via oAuth client and secret to get greater request limits
     	//GitHubClientOAuthServer client = new GitHubClientOAuthServer(System.getenv(GITHUB_CLIENT_ID), System.getenv(GITHUB_CLIENT_SECRET) );
@@ -197,7 +210,7 @@ public class GitHubSalesforceDeployController {
         // Download the Repository as an archive zip
     	RepositoryId repoId = RepositoryId.create(repoOwner, repoName);
         ContentsServiceEx contentService = new ContentsServiceEx(client);
-        ZipInputStream zipIS = contentService.getArchiveAsZip(repoId);
+        ZipInputStream zipIS = contentService.getArchiveAsZip(repoId, repoBranch);
         
 		// Dynamically generated package manifest?
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -296,7 +309,7 @@ public class GitHubSalesforceDeployController {
     }
 
     @ResponseBody
-    @RequestMapping(method = RequestMethod.GET, value = "/{owner}/{repo}/checkstatus/{asyncId}")
+    @RequestMapping(method = RequestMethod.GET, value = "/{owner}/{repo}/{branch}/checkstatus/{asyncId}")
     public String checkStatus(@PathVariable("asyncId") String asyncId) throws Exception 
     {
     	// Connect to Metadata API, check async status and return to client
@@ -309,7 +322,7 @@ public class GitHubSalesforceDeployController {
     }
 
     @ResponseBody
-    @RequestMapping(method = RequestMethod.GET, value = "/{owner}/{repo}/checkdeploy/{asyncId}")
+    @RequestMapping(method = RequestMethod.GET, value = "/{owner}/{repo}/{branch}/checkdeploy/{asyncId}")
     public String checkDeploy(@PathVariable("asyncId") String asyncId) throws Exception 
     {
     	// Connect to Metadata API, check async status and return to client
@@ -360,13 +373,17 @@ public class GitHubSalesforceDeployController {
 			super(client);
 		}
     
-		public ZipInputStream getArchiveAsZip(IRepositoryIdProvider repository)
+		public ZipInputStream getArchiveAsZip(IRepositoryIdProvider repository, String repoBranch)
 			throws Exception
 		{
+			//TODO: Add support for branch
 			String id = getId(repository);
 			StringBuilder uri = new StringBuilder(SEGMENT_REPOS);
 			uri.append('/').append(id);
 			uri.append('/').append("zipball");
+			if(!Strings.isNullOrEmpty(repoBranch)) {
+				uri.append('/').append(repoBranch);
+			}
 			GitHubRequest request = createRequest();
 			request.setUri(uri);			
 			return new ZipInputStream(getClient().getStream(request));
