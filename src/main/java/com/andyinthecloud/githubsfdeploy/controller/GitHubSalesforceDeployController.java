@@ -114,7 +114,7 @@ public class GitHubSalesforceDeployController {
 			//Get branches
 			//if(repoBranch != null && repoBranch != '') {
 			if(repoBranch != null && repoBranch != "") {
-				list<RepositoryBranch> branches = service.getBranches(repoId);
+				List<RepositoryBranch> branches = service.getBranches(repoId);
 				for(RepositoryBranch rb : branches) {
 					if(rb.getName() == repoBranch) {
 						map.put("path",rb);
