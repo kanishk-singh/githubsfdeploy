@@ -111,7 +111,7 @@ public class GitHubSalesforceDeployController {
 			
 			//Get branches
 			//if(repoBranch != null && repoBranch != '') {
-			if(repoBranch != null && repoBranch != '') {
+			if(repoBranch != null && repoBranch != "") {
 				list<RepositoryBranch> branches = service.getBranches(repoId);
 				for(RepositoryBranch rb : branches) {
 					if(rb.getName() == repoBranch) {
@@ -135,12 +135,14 @@ public class GitHubSalesforceDeployController {
 	    	
 	    	// Retrieve repository contents applicable for deploy
 	    	ContentsServiceEx contentService = new ContentsServiceEx(client);
-			if(repoBranch != null && repoBranch != '') {
-		    	scanRepository(contentService, repoId, contentService.getContents(repoId,repoBranch), repositoryContainer, repositoryScanResult);
+			List<RepositoryContents> rootContents;
+			if(repoBranch != null && repoBranch != "") {
+				rootContents = contentService.getContents(repoId,repoBranch);
 			}
 			else {
-				scanRepository(contentService, repoId, contentService.getContents(repoId), repositoryContainer, repositoryScanResult);
+				rootContents = contentService.getContents(repoId);
 			}	    		    	
+			scanRepository(contentService, repoId, rootContents, repositoryContainer, repositoryScanResult);
 	    	ObjectMapper mapper = new ObjectMapper();	    	
 	    	if(repositoryScanResult.pacakgeRepoDirectory!=null)
 	    		map.put("githubcontents", mapper.writeValueAsString(repositoryScanResult.pacakgeRepoDirectory));
