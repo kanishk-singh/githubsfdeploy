@@ -7,6 +7,14 @@
         </div>
 
         <div class="alert">
+            <p>
+            <c:if test="${not empty errMsg}">
+                    <div><c:out value="${errMsg}"/></div>
+            </c:if> 
+            <c:if test="${not empty errStack}">
+                    <div><c:out value="${errStack}"/></div>
+            </c:if> 
+
             <p><c:out value="${requestScope['javax.servlet.error.message']}"/></p>
 
             <c:if test="${requestScope['javax.servlet.error.message'] == 'Authentication Failed: OAuth login invalid or expired access token'}">
