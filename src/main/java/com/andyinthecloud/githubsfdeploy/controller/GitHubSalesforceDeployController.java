@@ -320,7 +320,6 @@ public class GitHubSalesforceDeployController {
     	catch (Exception e)
     	{
     		// Handle error
-    		map.put("error", "Failed to retrive GitHub repository details : " + e.toString());
     		e.printStackTrace();
 			return "Failed to retrive GitHub repository details : " + e.toString();
     	}
