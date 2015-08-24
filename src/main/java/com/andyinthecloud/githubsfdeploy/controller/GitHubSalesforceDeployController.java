@@ -111,7 +111,7 @@ public class GitHubSalesforceDeployController {
 			
 			//Get branches
 			//if(repoBranch != null && repoBranch != '') {
-			if(!Strings.isNullOrEmpty(repoBranch)) {
+			if(repoBranch != null && repoBranch != '') {
 				list<RepositoryBranch> branches = service.getBranches(repoId);
 				for(RepositoryBranch rb : branches) {
 					if(rb.getName() == repoBranch) {
@@ -135,7 +135,7 @@ public class GitHubSalesforceDeployController {
 	    	
 	    	// Retrieve repository contents applicable for deploy
 	    	ContentsServiceEx contentService = new ContentsServiceEx(client);
-			if(!Strings.isNullOrEmpty(repoBranch)) {
+			if(repoBranch != null && repoBranch != '') {
 		    	scanRepository(contentService, repoId, contentService.getContents(repoId,repoBranch), repositoryContainer, repositoryScanResult);
 			}
 			else {
