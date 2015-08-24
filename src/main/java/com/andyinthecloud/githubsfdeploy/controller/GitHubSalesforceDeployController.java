@@ -319,8 +319,8 @@ public class GitHubSalesforceDeployController {
 		}
 		catch(Exception e) {
 			e.printStackTrace();
-			redirectAttributes.addFlashAttribute("errMsg","An error occured: " + e.toString());
-			redirectAttributes.addFlashAttribute("errStack","An error occured: " + e.printStackTrace());
+			//redirectAttributes.addFlashAttribute("errMsg","An error occured: " + e.toString());
+			//redirectAttributes.addFlashAttribute("errStack","An error occured: " + e.printStackTrace());
 			return "An error occured: " + e.toString();
 		}
     }
