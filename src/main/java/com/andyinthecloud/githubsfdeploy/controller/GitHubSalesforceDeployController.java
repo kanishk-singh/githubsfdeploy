@@ -389,7 +389,7 @@ public class GitHubSalesforceDeployController {
 			StringBuilder uri = new StringBuilder(SEGMENT_REPOS);
 			uri.append('/').append(id);
 			uri.append('/').append("zipball");
-			if(repoBranch != null && repoBranch != "")) {
+			if(repoBranch != null && repoBranch != "") {
 				uri.append('/').append(repoBranch);
 			}
 			GitHubRequest request = createRequest();
