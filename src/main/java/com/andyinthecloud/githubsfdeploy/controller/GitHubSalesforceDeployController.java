@@ -135,7 +135,12 @@ public class GitHubSalesforceDeployController {
 	    	
 	    	// Retrieve repository contents applicable for deploy
 	    	ContentsServiceEx contentService = new ContentsServiceEx(client);
-	    	scanRepository(contentService, repoId, contentService.getContents(repoId,(repoBranch == '' ? null : repoBranch)), repositoryContainer, repositoryScanResult);	    		    	
+			if(!Strings.isNullOrEmpty(repoBranch)) {
+		    	scanRepository(contentService, repoId, contentService.getContents(repoId,repoBranch), repositoryContainer, repositoryScanResult);
+			}
+			else {
+				scanRepository(contentService, repoId, contentService.getContents(repoId), repositoryContainer, repositoryScanResult);
+			}	    		    	
 	    	ObjectMapper mapper = new ObjectMapper();	    	
 	    	if(repositoryScanResult.pacakgeRepoDirectory!=null)
 	    		map.put("githubcontents", mapper.writeValueAsString(repositoryScanResult.pacakgeRepoDirectory));
