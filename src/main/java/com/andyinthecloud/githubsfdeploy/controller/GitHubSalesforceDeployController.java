@@ -317,7 +317,7 @@ public class GitHubSalesforceDeployController {
 		objectMapper.getSerializationConfig().addMixInAnnotations(AsyncResult.class, AsyncResultMixIn.class);
 		return objectMapper.writeValueAsString(asyncResult);
 		}
-		catch(Exception ex) {
+		catch(Exception e) {
 			e.printStackTrace();
 			return "An error occured: " + e.toString();
 		}
