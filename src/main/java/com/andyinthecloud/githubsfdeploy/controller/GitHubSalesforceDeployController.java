@@ -167,126 +167,94 @@ public class GitHubSalesforceDeployController {
     @RequestMapping(method = RequestMethod.POST, value = "/{owner}/{repo}/{branch}")
     public String deploy(@PathVariable("owner") String repoOwner, @PathVariable("repo") String repoName, @PathVariable("branch") String repoBranch, @RequestBody String repoContentsJson) throws Exception 
     {
-    	// Connect via oAuth client and secret to get greater request limits
-    	//GitHubClientOAuthServer client = new GitHubClientOAuthServer(System.getenv(GITHUB_CLIENT_ID), System.getenv(GITHUB_CLIENT_SECRET) );
-		GitHubClient client = new GitHubClient();
-		//client.setCredentials(System.getenv(GITHUB_USERNAME),System.getenv(GITHUB_PASSWORD));
-		client.setOAuth2Token(System.getenv(GITHUB_TOKEN));
-   
-    	// Repository files to deploy
-    	ObjectMapper mapper = new ObjectMapper();
-    	RepositoryItem repositoryContainer = (RepositoryItem) mapper.readValue(repoContentsJson, RepositoryItem.class);
-    	
-    	// Performing a package deployment from a package manifest in the repository?
-        String repoPackagePath = null;
-        RepositoryItem firstFile = repositoryContainer.repositoryItems.get(0);
-        if(firstFile.repositoryItem.getName().equals("package.xml"))
-        	repoPackagePath = 
-        		firstFile.repositoryItem.getPath().substring(0, 
-        				firstFile.repositoryItem.getPath().length() - (firstFile.repositoryItem.getName().length()));
-        
-        // Calculate a package manifest?
-        String packageManifestXml = null;
-        Map<String, RepositoryItem> filesToDeploy = new HashMap<String, RepositoryItem>();
-        Map<String, List<String>> typeMembersByType = new HashMap<String, List<String>>(); 
-        if(repoPackagePath==null)
-        {
-        	// Construct package manifest and files to deploy map by path
-        	Package packageManifest = new Package();    	
-        	packageManifest.setVersion("29.0"); // TODO: Make version configurable / auto
-        	List<PackageTypeMembers> packageTypeMembersList = new ArrayList<PackageTypeMembers>(); 
-        	scanFilesToDeploy(filesToDeploy, typeMembersByType, repositoryContainer);
-	    	for(String metadataType : typeMembersByType.keySet())
-	    	{
-	    		PackageTypeMembers packageTypeMembers = new PackageTypeMembers();
-	    		packageTypeMembers.setName(metadataType);
-	    		packageTypeMembers.setMembers((String[])typeMembersByType.get(metadataType).toArray(new String[0]));
-	    		packageTypeMembersList.add(packageTypeMembers);
-	    	}
-	    	packageManifest.setTypes((PackageTypeMembers[]) packageTypeMembersList.toArray(new PackageTypeMembers[0]));	    	
-	    	// Serialise it (better way to do this?)
-	        TypeMapper typeMapper = new TypeMapper();
-	        ByteArrayOutputStream packageBaos = new ByteArrayOutputStream();
-	        QName packageQName = new QName("http://soap.sforce.com/2006/04/metadata", "Package");
-	        XmlOutputStream xmlOutputStream = new XmlOutputStream(packageBaos, true);
-	        xmlOutputStream.setPrefix("", "http://soap.sforce.com/2006/04/metadata");
-	        xmlOutputStream.setPrefix("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-	        packageManifest.write(packageQName, xmlOutputStream, typeMapper);
-	        xmlOutputStream.close();
-	        packageManifestXml = new String(packageBaos.toByteArray());  
-        }
-        
-        // Download the Repository as an archive zip
-    	RepositoryId repoId = RepositoryId.create(repoOwner, repoName);
-        ContentsServiceEx contentService = new ContentsServiceEx(client);
-        ZipInputStream zipIS = contentService.getArchiveAsZip(repoId, repoBranch);
-        
-		// Dynamically generated package manifest?
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		ZipOutputStream zipOS = new ZipOutputStream(baos);
-		if(packageManifestXml!=null)
-		{
-			ZipEntry metadataZipEntry = new ZipEntry("package.xml");
-			zipOS.putNextEntry(metadataZipEntry);
-			zipOS.write(packageManifestXml.getBytes());
-			zipOS.closeEntry();
-		}
-        // Read the zip entries, output to the metadata deploy zip files selected
-		while(true)
-		{
-			ZipEntry zipEntry = zipIS.getNextEntry();
-			if(zipEntry==null)
-				break;
-			// Determine the repository relative path (zip file contains an archive folder in root)
-			String zipPath = zipEntry.getName();
-			String repoPath = zipPath.substring(zipPath.indexOf("/") + 1);
-			// Found a repository file to deploy?
-			if(filesToDeploy.containsKey(repoPath))
+		try {
+			// Connect via oAuth client and secret to get greater request limits
+			//GitHubClientOAuthServer client = new GitHubClientOAuthServer(System.getenv(GITHUB_CLIENT_ID), System.getenv(GITHUB_CLIENT_SECRET) );
+			GitHubClient client = new GitHubClient();
+			//client.setCredentials(System.getenv(GITHUB_USERNAME),System.getenv(GITHUB_PASSWORD));
+			client.setOAuth2Token(System.getenv(GITHUB_TOKEN));
+	
+			// Repository files to deploy
+			ObjectMapper mapper = new ObjectMapper();
+			RepositoryItem repositoryContainer = (RepositoryItem) mapper.readValue(repoContentsJson, RepositoryItem.class);
+			
+			// Performing a package deployment from a package manifest in the repository?
+			String repoPackagePath = null;
+			RepositoryItem firstFile = repositoryContainer.repositoryItems.get(0);
+			if(firstFile.repositoryItem.getName().equals("package.xml"))
+				repoPackagePath = 
+					firstFile.repositoryItem.getPath().substring(0, 
+							firstFile.repositoryItem.getPath().length() - (firstFile.repositoryItem.getName().length()));
+			
+			// Calculate a package manifest?
+			String packageManifestXml = null;
+			Map<String, RepositoryItem> filesToDeploy = new HashMap<String, RepositoryItem>();
+			Map<String, List<String>> typeMembersByType = new HashMap<String, List<String>>(); 
+			if(repoPackagePath==null)
 			{
-				// Create metadata file (in correct folder for its type)
-				RepositoryItem repoItem = filesToDeploy.get(repoPath);
-				String zipName = repoItem.metadataFolder+"/";
-				if(repoItem.metadataInFolder)
+				// Construct package manifest and files to deploy map by path
+				Package packageManifest = new Package();    	
+				packageManifest.setVersion("29.0"); // TODO: Make version configurable / auto
+				List<PackageTypeMembers> packageTypeMembersList = new ArrayList<PackageTypeMembers>(); 
+				scanFilesToDeploy(filesToDeploy, typeMembersByType, repositoryContainer);
+				for(String metadataType : typeMembersByType.keySet())
 				{
-					String[] folders = repoItem.repositoryItem.getPath().split("/");
-					String folderName = folders[folders.length-2];
-					zipName+= folderName + "/";
+					PackageTypeMembers packageTypeMembers = new PackageTypeMembers();
+					packageTypeMembers.setName(metadataType);
+					packageTypeMembers.setMembers((String[])typeMembersByType.get(metadataType).toArray(new String[0]));
+					packageTypeMembersList.add(packageTypeMembers);
 				}
-				zipName+= repoItem.repositoryItem.getName();
-				ZipEntry metadataZipEntry = new ZipEntry(zipName);
-				zipOS.putNextEntry(metadataZipEntry);
-				// Copy bytes over from Github archive input stream to Metadata zip output stream
-				byte[] buffer = new byte[1024];
-				int length = 0;
-				while((length = zipIS.read(buffer)) > 0)
-					zipOS.write(buffer, 0, length);
-				zipOS.closeEntry();
-				// Missing metadata file for Apex classes?
-				if(repoItem.metadataType.equals("ApexClass") && !filesToDeploy.containsKey(repoPath+"-meta.xml"))
-				{
-					StringBuilder sb = new StringBuilder();
-					sb.append("<ApexClass xmlns=\"http://soap.sforce.com/2006/04/metadata\">");
-					sb.append("<apiVersion>27.0</apiVersion>"); // TODO: Make version configurable / auto
-					sb.append("<status>Active</status>");
-					sb.append("</ApexClass>");
-					ZipEntry missingMetadataZipEntry = new ZipEntry(repoItem.metadataFolder+"/"+repoItem.repositoryItem.getName()+"-meta.xml");
-					zipOS.putNextEntry(missingMetadataZipEntry);
-					zipOS.write(sb.toString().getBytes());
-					zipOS.closeEntry();					
-				}
+				packageManifest.setTypes((PackageTypeMembers[]) packageTypeMembersList.toArray(new PackageTypeMembers[0]));	    	
+				// Serialise it (better way to do this?)
+				TypeMapper typeMapper = new TypeMapper();
+				ByteArrayOutputStream packageBaos = new ByteArrayOutputStream();
+				QName packageQName = new QName("http://soap.sforce.com/2006/04/metadata", "Package");
+				XmlOutputStream xmlOutputStream = new XmlOutputStream(packageBaos, true);
+				xmlOutputStream.setPrefix("", "http://soap.sforce.com/2006/04/metadata");
+				xmlOutputStream.setPrefix("xsi", "http://www.w3.org/2001/XMLSchema-instance");
+				packageManifest.write(packageQName, xmlOutputStream, typeMapper);
+				xmlOutputStream.close();
+				packageManifestXml = new String(packageBaos.toByteArray());  
 			}
-			// Found a package directory to deploy?
-			else if(repoPackagePath!=null && repoPath.equals(repoPackagePath))
-			{				
-				while(true)
+			
+			// Download the Repository as an archive zip
+			RepositoryId repoId = RepositoryId.create(repoOwner, repoName);
+			ContentsServiceEx contentService = new ContentsServiceEx(client);
+			ZipInputStream zipIS = contentService.getArchiveAsZip(repoId, repoBranch);
+			
+			// Dynamically generated package manifest?
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ZipOutputStream zipOS = new ZipOutputStream(baos);
+			if(packageManifestXml!=null)
+			{
+				ZipEntry metadataZipEntry = new ZipEntry("package.xml");
+				zipOS.putNextEntry(metadataZipEntry);
+				zipOS.write(packageManifestXml.getBytes());
+				zipOS.closeEntry();
+			}
+			// Read the zip entries, output to the metadata deploy zip files selected
+			while(true)
+			{
+				ZipEntry zipEntry = zipIS.getNextEntry();
+				if(zipEntry==null)
+					break;
+				// Determine the repository relative path (zip file contains an archive folder in root)
+				String zipPath = zipEntry.getName();
+				String repoPath = zipPath.substring(zipPath.indexOf("/") + 1);
+				// Found a repository file to deploy?
+				if(filesToDeploy.containsKey(repoPath))
 				{
-					// More package files to zip or dropped out of the package folder? 
-					zipEntry = zipIS.getNextEntry();
-					if(zipEntry==null || !zipEntry.getName().startsWith(zipPath))
-						break;
-					// Generate the Metadata zip entry name
-					String metadataZipEntryName = zipEntry.getName().substring(zipPath.length());					
-					ZipEntry metadataZipEntry = new ZipEntry(metadataZipEntryName);
+					// Create metadata file (in correct folder for its type)
+					RepositoryItem repoItem = filesToDeploy.get(repoPath);
+					String zipName = repoItem.metadataFolder+"/";
+					if(repoItem.metadataInFolder)
+					{
+						String[] folders = repoItem.repositoryItem.getPath().split("/");
+						String folderName = folders[folders.length-2];
+						zipName+= folderName + "/";
+					}
+					zipName+= repoItem.repositoryItem.getName();
+					ZipEntry metadataZipEntry = new ZipEntry(zipName);
 					zipOS.putNextEntry(metadataZipEntry);
 					// Copy bytes over from Github archive input stream to Metadata zip output stream
 					byte[] buffer = new byte[1024];
@@ -294,27 +262,68 @@ public class GitHubSalesforceDeployController {
 					while((length = zipIS.read(buffer)) > 0)
 						zipOS.write(buffer, 0, length);
 					zipOS.closeEntry();
+					// Missing metadata file for Apex classes?
+					if(repoItem.metadataType.equals("ApexClass") && !filesToDeploy.containsKey(repoPath+"-meta.xml"))
+					{
+						StringBuilder sb = new StringBuilder();
+						sb.append("<ApexClass xmlns=\"http://soap.sforce.com/2006/04/metadata\">");
+						sb.append("<apiVersion>27.0</apiVersion>"); // TODO: Make version configurable / auto
+						sb.append("<status>Active</status>");
+						sb.append("</ApexClass>");
+						ZipEntry missingMetadataZipEntry = new ZipEntry(repoItem.metadataFolder+"/"+repoItem.repositoryItem.getName()+"-meta.xml");
+						zipOS.putNextEntry(missingMetadataZipEntry);
+						zipOS.write(sb.toString().getBytes());
+						zipOS.closeEntry();					
+					}
 				}
-				break;
-			}
-		}     
-		zipOS.close();
-				
-		// Connect to Salesforce Metadata API
-        ForceServiceConnector connector = new ForceServiceConnector(ForceServiceConnector.getThreadLocalConnectorConfig());
-        MetadataConnection metadataConnection = connector.getMetadataConnection();
-				
-		// Deploy to Salesforce
-		DeployOptions deployOptions = new DeployOptions();
-		deployOptions.setSinglePackage(true);
-		deployOptions.setPerformRetrieve(false);
-		deployOptions.setRollbackOnError(true);
-		AsyncResult asyncResult = metadataConnection.deploy(baos.toByteArray(), deployOptions);
-
-		// Given the client the AysncResult to poll for the result of the deploy
-		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.getSerializationConfig().addMixInAnnotations(AsyncResult.class, AsyncResultMixIn.class);
-		return objectMapper.writeValueAsString(asyncResult);
+				// Found a package directory to deploy?
+				else if(repoPackagePath!=null && repoPath.equals(repoPackagePath))
+				{				
+					while(true)
+					{
+						// More package files to zip or dropped out of the package folder? 
+						zipEntry = zipIS.getNextEntry();
+						if(zipEntry==null || !zipEntry.getName().startsWith(zipPath))
+							break;
+						// Generate the Metadata zip entry name
+						String metadataZipEntryName = zipEntry.getName().substring(zipPath.length());					
+						ZipEntry metadataZipEntry = new ZipEntry(metadataZipEntryName);
+						zipOS.putNextEntry(metadataZipEntry);
+						// Copy bytes over from Github archive input stream to Metadata zip output stream
+						byte[] buffer = new byte[1024];
+						int length = 0;
+						while((length = zipIS.read(buffer)) > 0)
+							zipOS.write(buffer, 0, length);
+						zipOS.closeEntry();
+					}
+					break;
+				}
+			}     
+			zipOS.close();
+					
+			// Connect to Salesforce Metadata API
+			ForceServiceConnector connector = new ForceServiceConnector(ForceServiceConnector.getThreadLocalConnectorConfig());
+			MetadataConnection metadataConnection = connector.getMetadataConnection();
+					
+			// Deploy to Salesforce
+			DeployOptions deployOptions = new DeployOptions();
+			deployOptions.setSinglePackage(true);
+			deployOptions.setPerformRetrieve(false);
+			deployOptions.setRollbackOnError(true);
+			AsyncResult asyncResult = metadataConnection.deploy(baos.toByteArray(), deployOptions);
+	
+			// Given the client the AysncResult to poll for the result of the deploy
+			ObjectMapper objectMapper = new ObjectMapper();
+			objectMapper.getSerializationConfig().addMixInAnnotations(AsyncResult.class, AsyncResultMixIn.class);
+			return objectMapper.writeValueAsString(asyncResult);
+    	}
+    	catch (Exception e)
+    	{
+    		// Handle error
+    		map.put("error", "Failed to retrive GitHub repository details : " + e.toString());
+    		e.printStackTrace();
+			return "Failed to retrive GitHub repository details : " + e.toString();
+    	}
     }
 
     @ResponseBody
